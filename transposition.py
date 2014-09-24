@@ -4,8 +4,17 @@ from math import floor
 from sys import argv, exit
 
 def decode(myStr, myKey):
-	strLen = len(myStr)
+	"""
+	Decode is the function that will decode one instance of cipher text with one specified value
+	for number of columns, referred to as the key.
 
+	myStr: The cipher text to be cracked.
+	myKey: The key, or number of columns.
+
+	Returns the decoded string in plain text as a string.
+	"""
+
+	strLen = len(myStr)
 	rows = list()
 	counter = 0
 	i = 0
@@ -54,37 +63,50 @@ else:
 			  "of half the cipher text length and print all results by default.")
 		print("You may give the cipher text as an argument, or you can specify the -f flag and "
 			  "specify the name of a file containing the cipher text.\n")
-		print "-h,--help	Print this help."
-		print "-f FILE		Take cipher text from a file named FILE."
-		print "-k			Assumed key value, which is the number of columns."
-		print "-m			Maximum number of column sizes to try."
+		print "-h,--help			Print this help."
+		print "-f,--file FILE		Take cipher text from a file named FILE."
+		print "-k,--key				Assumed key value, which is the number of columns."
+		print "-m,--max,--maxkey	Maximum number of column sizes to try."
+		print ("-p,--phrase			A phrase you think will be in the plaintext. If found in the "
+			   "plaintext, only that result will be printed. This helps make cracking faster and "
+			   "output easier to read. The longer the phrase, the more accurate the prediction.")
 		exit(0)
 
 	i = 1
 	key = 1
 	maxKey = 1
 	ciph = ""
+	phrase = ""
 	while i < len(argv):
-		if argv[i] == "-f": #if a file given
+		if argv[i] == "-f" or argv[i] == "--file": #if a file given
 			with open(argv[i+1], "r") as f:
 				ciph = f.read()
 
 			i += 2
-		elif argv[i] == "-k": #if key value given
+		elif argv[i] == "-k" or argv[i] == "--key": #if key value given
 			key = int(argv[i+1])
 			i +=2
-		elif argv[i] == "-m": #if max value given
+		elif argv[i] == "-m" or argv[i] == "--max" or argv[i].lower() == "--maxkey": #if max value given
 			maxKey = int(argv[i+1])
 			i += 2
+		elif argv[i] == "-p" or argv[i] == "--phrase": #if phrase given
+			phrase = argv[i+1]
+			i += 2
 		else: #if argument by itself, it is ciphertext
-			if not ciph: #if ciph is not defined, grab argument for its value
+			if not ciph: #if ciph is not already defined, grab argument for its value
 				ciph = argv[i]
 
 			i += 1
 
+
+print "\n" #extra newline for formatting
+
 if len(ciph) < 4:
 	print "Must have cipher text more than 4 characters."
 	exit(-2)
+
+#remove newlines from cipher text because it screws things up
+ciph = ciph.replace("\n", "")
 
 if key > 1:
 	start = key
@@ -94,7 +116,18 @@ else:
 	if maxKey < 2:
 		maxKey = len(ciph) / 2
 
-for myKey in range(start,maxKey+1):
-	print "Plain text with key %d" % myKey
-	print "=" * 20
-	print(decode(ciph, myKey)), "\n"
+if phrase:
+	for myKey in range(start,maxKey+1):
+		result = decode(ciph, myKey)
+		if phrase in result:
+			print "Match found with key of %d" % myKey
+			print "=" * (24 + len(str(myKey)))
+			print result
+			exit(0)
+
+	print "No matches found. To see all results, try again without specifying a phrase."
+else:
+	for myKey in range(start,maxKey+1):
+		print "Plain text with key %d" % myKey
+		print "=" * (20 + len(str(myKey)))
+		print(decode(ciph, myKey)), "\n"
